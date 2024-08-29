@@ -17,8 +17,43 @@ const getOneDriver = async (req, res) => {
 
 const getAllDriver = async (req, res) => {
   try {
-    const response = await Driver.find();
-    res.status(200).json(response);
+    const searchObj = {};
+    const filter = req.query;
+    const excludedFields = ["page", "limit"];
+    for (key in filter) {
+      if (!excludedFields.includes([key])) {
+        if (filter[key] === "name") {
+          searchObj[key] = { $regex: filter[key], $options: "i" };
+        } else if (searchObj[key] === "total_rides") {
+          const rideFilter = [key].split(",");
+          if (rideFilter.length === 2) {
+            searchObj[key] = {
+              $gte: parseInt(rideFilter[0]),
+              $lte: parseInt(rideFilter[1]),
+            };
+          } else {
+            searchObj[key] = parseInt(filter[key]);
+          }
+        }
+      }
+    }
+    // Pagination
+    const page = parseInt(filter.page) || 1;
+    const limit = parseInt(filter.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const drivers = await Driver.find(searchObj).skip(skip).limit(limit);
+
+    const totalDrivers = await Customer.countDocuments(searchObj);
+
+    res.status(200).json({
+      status: "success",
+      results: drivers.length,
+      totalDrivers,
+      currentPage: page,
+      totalPages: Math.ceil(totalCustomers / limit),
+      data: customers,
+    });
   } catch (err) {
     res
       .status(500)

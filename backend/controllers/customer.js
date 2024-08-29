@@ -16,8 +16,43 @@ const getOneCustomer = async (req, res) => {
 
 const getAllCustomers = async (req, res) => {
   try {
-    const customers = await Customer.find();
-    res.status(200).json(customers);
+    const searchObj = {};
+    const filter = req.query;
+    const excludedFields = ["page", "limit", "sort"];
+    for (key in filter) {
+      if (!excludedFields.includes([key])) {
+        if (filter[key] === "name") {
+          searchObj[key] = { $regex: filter[key], $options: "i" };
+        } else if (searchObj[key] === "total ride") {
+          const rideFilter = [key].split(",");
+          if (rideFilter.length === 2) {
+            searchObj[key] = {
+              $gte: parseInt(rideFilter[0]),
+              $lte: parseInt(rideFilter[1]),
+            };
+          } else {
+            searchObj[key] = parseInt(filter[key]);
+          }
+        }
+      }
+    }
+    // Pagination
+    const page = parseInt(filter.page) || 1;
+    const limit = parseInt(filter.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const customers = await Customer.find(searchObj).skip(skip).limit(limit);
+
+    const totalCustomers = await Customer.countDocuments(searchObj);
+
+    res.status(200).json({
+      status: "success",
+      results: customers.length,
+      totalCustomers,
+      currentPage: page,
+      totalPages: Math.ceil(totalCustomers / limit),
+      data: customers,
+    });
   } catch (err) {
     console.error("Error in getAllCustomers:", err);
     res.status(500).json({ message: "Internal Server Error" });
