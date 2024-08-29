@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const Driver = require("../models/driver");
 const Customer = require("../models/customer");
 
-const driverAuthentication = async (req, res, next) => {
+const authenticateDriver = async (req, res, next) => {
   const token = req.headers.authorization;
   if (!token) {
     return res.status(401).json({ error: "Unauthorized: No token provided" });
@@ -23,7 +23,7 @@ const driverAuthentication = async (req, res, next) => {
   }
 };
 
-const customerAuthentication = async (req, res, next) => {
+const authenticateCustomer = async (req, res, next) => {
   const token = req.headers.authorization;
   if (!token) {
     return res.status(401).json({ error: "Unauthorized: No token provided" });
@@ -45,6 +45,6 @@ const customerAuthentication = async (req, res, next) => {
 };
 
 module.exports = {
-  driverAuthentication,
-  customerAuthentication,
+  authenticateCustomer,
+  authenticateDriver,
 };
